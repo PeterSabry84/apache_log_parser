@@ -9,7 +9,8 @@ class Utils extends Serializable {
     
 
     def containsURL(line:String):Boolean = return line matches "^.*\"\\S+\\s(\\S+html) .*$"
-    
+    def containsCode(line:String):Boolean = return line matches "^.*\"\\s(\\d{3}) .*$"
+    def containsTimeFrame(line:String):Boolean = return line matches "^.*\\s\\[(\\S+:\\d{2}):\\d{2}:\\d{2}.*$"
     
     //Extract only URLs accessing html pages to exlude .gif and other resources
     def extractURL(line:String):(String) = {
@@ -20,37 +21,37 @@ class Utils extends Serializable {
     }
     def extractHTTPcode(line:String):(String) = {
     
-        val pattern = "^.*\"\\s(\\S+) .*$".r
+        val pattern = "^.*\"\\s(\\d{3}) .*$".r
         val pattern(httpcode:String) = line
         return (httpcode.toString)
     }
     def extractTimeFrames(line:String):(String) = {
-    
+        
         val pattern = "^.*\\s\\[(\\S+:\\d{2}):\\d{2}:\\d{2}.*$".r
         val pattern(tf:String) = line
         return (tf.toString)
     }     
 
-    def gettop10urls(accessLogs:RDD[String], sc:SparkContext):Array[(String,Int)] = {
+    def gettop5urls(accessLogs:RDD[String], sc:SparkContext):Array[(String,Int)] = {
         //Keep only the lines which have URLs
         var URLaccessLog = accessLogs.filter(containsURL)
         var accessURLs = URLaccessLog.map(extractURL(_))
         var accessURLs_pairs = accessURLs.map((_,1));
         var frequencies = accessURLs_pairs.reduceByKey(_ + _);
         var sortedfrequencies = frequencies.sortBy(x => x._2, false)
-        return sortedfrequencies.take(10)
+        return sortedfrequencies.take(5)
     }
     def gethttpcodes(accessLogs:RDD[String], sc:SparkContext):Array[(String,Int)] = {
-   
-    var httpcodes = accessLogs.map(extractHTTPcode(_))
+    var cleanCodes = accessLogs.filter(containsCode)
+    var httpcodes = cleanCodes.map(extractHTTPcode(_))
     var httpcodes_pairs = httpcodes.map((_,1));
     var frequencies = httpcodes_pairs.reduceByKey(_ + _);
     var sortedfrequencies = frequencies.sortBy(x => x._2, false)
     return sortedfrequencies.collect
     }
     def gettimeframes(accessLogs:RDD[String], sc:SparkContext, ordr:Boolean):Array[(String,Int)] = {
-   
-    var timeframes = accessLogs.map(extractTimeFrames(_))
+    var cleanTimeFeames = accessLogs.filter(containsTimeFrame)
+    var timeframes = cleanTimeFeames.map(extractTimeFrames(_))
     var timeframes_pairs = timeframes.map((_,1));
     var frequencies = timeframes_pairs.reduceByKey(_ + _);
     var sortedfrequencies = frequencies.sortBy(x => x._2, ordr)
@@ -82,7 +83,7 @@ object EntryPoint {
 
    
         var accessLogs = sc.textFile(args(1))
-        val top10urls = utils.gettop10urls(accessLogs, sc)
+        val top10urls = utils.gettop5urls(accessLogs, sc)
         val http_codes = utils.gethttpcodes(accessLogs, sc)
         val high_timeframes = utils.gettimeframes(accessLogs, sc,false)
         val low_timeframes = utils.gettimeframes(accessLogs, sc,true)

@@ -32,4 +32,22 @@ class LogParserSpec extends FlatSpec {
     var line2 = "uplherc.upl.com - - [01/Aug/1995:00:00:07 -0400] \"GET / HTTP/1.0\" 304 0"
     assert(!utils.containsURL(line2))
   }
+  "containsCode" should "Check if HTTP Code exists in the log line" in {
+    val utils = new Utils
+    var line1 = "in24.inetnebr.com - - [01/Aug/1995:00:00:01 -0400] \"GET /shuttle/missions/sts-69/mission-sts-69.html HTTP/1.0\" 200 1839"
+
+    assert(utils.containsCode(line1))
+    
+    var line2 = "uplherc.upl.com - - [01/Aug/1995:00:00:07 -0400] \"GET /shuttle/missions/sts-69/mission-sts-69.html HTTP/1.0\" xxx 0"
+    assert(!utils.containsCode(line2))
+  }
+  "containsTimeFrame" should "Check if Time frame exists in the log line" in {
+    val utils = new Utils
+    var line1 = "in24.inetnebr.com - - [01/Aug/1995:00:00:01 -0400] \"GET /shuttle/missions/sts-69/mission-sts-69.html HTTP/1.0\" 200 1839"
+
+    assert(utils.containsTimeFrame(line1))
+    
+    var line2 = "uplherc.upl.com - - [] \"GET /shuttle/missions/sts-69/mission-sts-69.html HTTP/1.0\" 304 0"
+    assert(!utils.containsTimeFrame(line2))
+  }
 }
